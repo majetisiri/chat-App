@@ -1,0 +1,103 @@
+<html>
+	<head>
+		<title>We Chat</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+		 <link rel="icon" type="image/gif/png/svg" href="http://www.freelogovectors.net/wp-content/uploads/2016/03/wechat_logo.jpg">
+		<script src="https://use.fontawesome.com/d37ef3b9e6.js"></script>
+		<script src="https://code.jquery.com/jquery-3.0.0.min.js"></script>
+		<link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+	</head>
+
+	<style>
+		body{
+			background: #009999;
+		}
+		.all-messages{
+			background: white;
+			border-width: 2px;
+			border-style:solid;
+			border-color: #ddd;
+			height:500px;
+			 overflow-y: scroll
+		}
+		.box{
+			margin-top:160px;
+		}
+		li{
+			margin: 0 0 8px 0;
+		}
+		h1{
+			color: white;
+			text-align: center;
+			font-size: 80px;
+			font-family: 'Pacifico', cursive;
+		}
+	</style>
+	<body>
+	<h1>We Chat</h1>
+	<div class="col-md-offset-4 col-md-4 box">
+		<input name ="name" placeholder="Name" type="text" class="form-control chat-name">
+		<div name="messages" class="all-messages">
+			<ul class="list-unstyled">
+			</ul>
+		</div>
+		<textarea name="message" placeholder="Type message here..." class="form-control chat-message" style="max-width: 100%;"></textarea>
+		<b><p style="color: #ddd;">Status:<span>Idle </span></p></b>
+	</div>
+	</body>
+	<script src="http://majetisiri.com:8000/socket.io/socket.io.js"> </script>
+
+	<script>
+		$(document).ready(function(){
+			try{
+				var socket= io.connect('http://majetisiri.com:8000');
+				}
+			catch(e){
+
+			}
+
+			if(socket != undefined){
+
+					socket.on('output',function(data){
+						if(data.length){
+							console.log(data);
+							for( $i =0 ; $i<data.length; $i++){
+								$('ul').append("<li><b><i>"+data[$i].name+ "</b></i>: " +data[$i].message+"</li>");
+							}
+						}
+					});
+
+					$('textarea').on('keypress',function(e){
+						
+						console.log(e);
+
+						if(e.which == 13 && e.shiftKey == false) {
+							
+								e.preventDefault();
+					
+								var name = $('.chat-name').val();
+								var	message=$('.chat-message').val();
+
+								whitespacepattern = /^\s*$/;
+			
+								if(whitespacepattern.test(name) || whitespacepattern.test(message)){	
+									$('span').text('Name and Message required');
+								}
+			
+								else {
+									$('span').text('Idle');	
+									var result = socket.emit('input', {name: name, message: message});
+									if(result) {
+										$('span').text('Message sent');
+										$('.chat-message').val('');
+										setTimeout("$('span').text('Idle')", 1000);
+									}
+								}
+						}
+						
+					});
+			}
+		});
+
+	</script>
+</html>
