@@ -4,37 +4,80 @@ var mongodb = require('mongodb').MongoClient,
 	client = require('socket.io').listen(8000).sockets;
 
 
-var server=http.createServer(function(request,response){
+let server= http.createServer(function(request,response){
 	response.writeHead(200,{"Content-Type":"text/html"});
  	 fs.createReadStream("./index.html").pipe(response);
-}).listen(2222);
+})
 
-console.log("server listening");
+let port = "2222";
+server.listen(port, '127.0.0.1');
 
+server.on('listening', function (e) {
+	console.log("server listening");
+	const url = 'mongodb://127.0.0.1:27017';
+	const dbName = 'chat';
 
-mongodb.connect('mongodb://127.0.0.1/chat',function(err,db){
-	if (err) throw err;
-	client.on('connection',function(socket){
-		console.log("someone connected");
-		
-		var dbCollection = db.collection('messages');
+	mongodb.connect(url, { useUnifiedTopology: true,useNewUrlParser: true }, (err, db) => {
+		if (err) throw err;
 
-		dbCollection.find().limit(100).toArray(function(err,result){
-			if (err) throw err;
-			socket.emit('output',result);
-		})
+		db = db.db(dbName)
+		console.log(`Connected MongoDB: ${url}`)
+		console.log(`Database: ${dbName}`)
+		client.on('connection',function(socket){
+			var dbMessages = db.collection('messages');
+			var dbUsers = db.collection('users');
 
-		socket.on('input',function(data){
+			dbMessages.find().limit(100).toArray(function(err,result){
+				if (err) throw err;
+				socket.emit('output',result);
+			})
+
+			dbUsers.find().toArray(function(err,result){
+				if (err) throw err;
+				socket.emit('users',result);
+			})
+
+			socket.on('input',function(data){
 				var name= data.name,
 					message= data.message;
+					logout = data.logout;
+				
 
-				client.emit('output',[data]);
-				dbCollection.insert({name:name, message:message},function(){
-					return true;
-				});	
-		});
+				if(message){
+					client.emit('output',[data]);
+					dbMessages.insertOne({name:name, message:message},function(){
+						return true;
+					});	
+				}
 
-	});	
+				if(logout){
+					dbUsers.updateOne({name:name}, {$set:{name:name,online:false}},async function(){
+						await dbUsers.find({}).toArray(function(err,result){
+							if (err) throw err;
+							client.emit('users',result);
+						});
+					});
+				}
 
+				if(name){
+					dbUsers.findOne({name:name},async function(err, user){
+						if(!user){
+							dbUsers.insertOne({name:name, online:true},function(){
+								return true;
+							});		
+						}
+
+						await dbUsers.find({}).toArray(function(err,result){
+							if (err) throw err;
+							client.emit('users',result);
+						});
+					});
+				}
+			});
+
+		});	
+
+	});
 });
 
+  

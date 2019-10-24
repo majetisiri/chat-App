@@ -6,96 +6,146 @@
 		<script src="https://use.fontawesome.com/d37ef3b9e6.js"></script>
 		<script src="https://code.jquery.com/jquery-3.0.0.min.js"></script>
 		<link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 	</head>
 
 	<style>
 		body{
-			background: #009999;
+			background: white;
+			overflow-x: hidden;
 		}
 		.all-messages{
 			background: white;
 			border-width: 2px;
 			border-style:solid;
 			border-color: #ddd;
-			height:500px;
-			 overflow-y: scroll
+			overflow-y: scroll;
+			height: 70%;
 		}
-		.box{
-			margin-top:160px;
+		.all-users{
+			background: white;
+			border-width: 2px;
+			border-style:solid;
+			border-color: #ddd;
+			height: 70%;
 		}
 		li{
 			margin: 0 0 8px 0;
 		}
 		h1{
-			color: white;
+			color: #009999;
 			text-align: center;
 			font-size: 80px;
 			font-family: 'Pacifico', cursive;
+			padding-bottom: 2%;
 		}
 	</style>
 	<body>
 	<h1>We Chat</h1>
-	<div class="col-md-offset-4 col-md-4 box">
-		<input name ="name" placeholder="Name" type="text" class="form-control chat-name">
-		<div name="messages" class="all-messages">
-			<ul class="list-unstyled">
-			</ul>
+	<div class="row" style="margin-left: 15%">
+		<div class="col-md-4">
+			<div class="all-users" style="padding: 2%">
+				<h4 style="color: #d9534f;">Online Users</h4><br>
+				<div name="users" id="all-users" class="list-unstyled">
+				</div>
+			</div><br>
+			<button type="button" class="btn btn-danger" style="float:right" id="logout">Logout</button>
 		</div>
-		<textarea name="message" placeholder="Type message here..." class="form-control chat-message" style="max-width: 100%;"></textarea>
-		<b><p style="color: #ddd;">Status:<span>Idle </span></p></b>
+		<div class="col-md-4">
+			<div name="messages" class="all-messages list-unstyled" id="all-messages" style="padding: 2%">
+			</div>
+			<textarea name="message" placeholder="Type message here..." class="form-control chat-message"></textarea>
+			<br><b><p style="color: black;">Status:<span>Idle </span></p></b>
+		</div>
 	</div>
+
+	<!-- Name Modal -->
+	<div class="modal fade" id="myModal" role="dialog">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<h4 class="modal-title">Please enter your name: </h4>
+		  </div>
+		  <div class="modal-body col-md-8">
+				<input name ="name" placeholder="Name" type="text" class="form-control chat-name">
+		  </div>
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-danger" id="Submit">Submit</button>
+		  </div>
+		</div>
+		
+	  </div>
+	</div>
+	<!-- Name Modal -->
+
 	</body>
-	<script src="http://majetisiri.com:8000/socket.io/socket.io.js"> </script>
+	<script src="http://localhost:8000/socket.io/socket.io.js"> </script>
 
 	<script>
-		$(document).ready(function(){
-			try{
-				var socket= io.connect('http://majetisiri.com:8000');
-				}
-			catch(e){
+		$(document).ready(function() {
+			$('#myModal').modal({backdrop: 'static', keyboard: false});
+			$('#myModal').modal('show');
+			var socket = io.connect('http://localhost:8000');
 
-			}
-
-			if(socket != undefined){
-
-					socket.on('output',function(data){
-						if(data.length){
-							console.log(data);
-							for( $i =0 ; $i<data.length; $i++){
-								$('ul').append("<li><b><i>"+data[$i].name+ "</b></i>: " +data[$i].message+"</li>");
+			if (socket != undefined) {
+				socket.on('output', function(messages) {
+					if (messages.length) {
+						for ($i = 0; $i < messages.length; $i++) {
+							$('#all-messages').append("<li id="+$i+"><b><i>" + messages[$i].name + "</b></i>: " + messages[$i].message + "</li>");
+						}
+					}
+				});
+				socket.on('users', function(users) {
+					if (users.length) {
+						$('#all-users').html("");
+						for ($i = 0; $i < users.length; $i++) {
+							if(users[$i].online){
+								$('#all-users').append("<li>" + users[$i].name+ "</li>");
 							}
 						}
+					}
+				});
+
+				$('#logout').click(function(e) {
+					var name = $('.chat-name').val();
+					var result = socket.emit('input', {
+						name: name,
+						logout: true
 					});
+				});
 
-					$('textarea').on('keypress',function(e){
-						
-						console.log(e);
+				$('#Submit').click(function(e) {
+					var name = $('.chat-name').val();
+					if (name){
+						$(this).attr("data-dismiss","modal");
+						var result = socket.emit('input', {
+							name: name,
+							logout: false
+						});
+					}
+				});
 
-						if(e.which == 13 && e.shiftKey == false) {
-							
-								e.preventDefault();
-					
-								var name = $('.chat-name').val();
-								var	message=$('.chat-message').val();
+				$('textarea').on('keypress', function(e) {
+					if (e.which == 13 && e.shiftKey == false) {
+						e.preventDefault();
+						var name = $('.chat-name').val();
+						var message = $('.chat-message').val();
 
-								whitespacepattern = /^\s*$/;
-			
-								if(whitespacepattern.test(name) || whitespacepattern.test(message)){	
-									$('span').text('Name and Message required');
-								}
-			
-								else {
-									$('span').text('Idle');	
-									var result = socket.emit('input', {name: name, message: message});
-									if(result) {
-										$('span').text('Message sent');
-										$('.chat-message').val('');
-										setTimeout("$('span').text('Idle')", 1000);
-									}
-								}
+						$('span').text('Idle');
+						var result = socket.emit('input', {
+							name: name,
+							message: message
+						});
+						if (result) {
+							$('span').text('Message sent');
+							$('.chat-message').val('');
+							setTimeout("$('span').text('Idle')", 1000);
 						}
-						
-					});
+					}
+
+				});
 			}
 		});
 

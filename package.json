@@ -1,0 +1,36 @@
+{
+  "name": "chat_app",
+  "version": "1.0.0",
+  "description": "A chat room where multiple users can send and receive messages.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "hello test test chat application"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/majetisiri/chat-App.git"
+  },
+  "keywords": [
+    "chat",
+    "message",
+    "send",
+    "receive"
+  ],
+  "author": "srividya majeti",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/majetisiri/chat-App/issues"
+  },
+  "homepage": "https://github.com/majetisiri/chat-App#readme",
+  "devDependencies": {
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "mongodb": "^3.3.2",
+    "socket.io": "^2.3.0"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
